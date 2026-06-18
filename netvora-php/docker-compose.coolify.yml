@@ -22,10 +22,17 @@ services:
       - app
     expose:
       - "80"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: coolify
+      traefik.http.routers.noc-dashboard.entrypoints: http
+      traefik.http.routers.noc-dashboard.rule: Host(`192.168.10.96`) && PathPrefix(`/`)
+      traefik.http.routers.noc-dashboard.service: noc-dashboard
+      traefik.http.services.noc-dashboard.loadbalancer.server.port: "80"
     networks:
       - netvora
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
