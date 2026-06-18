@@ -9,6 +9,7 @@ use App\Controllers\Api\AuthController;
 use App\Controllers\Api\BillingController;
 use App\Controllers\Api\DashboardController;
 use App\Controllers\Api\HealthController;
+use App\Controllers\Api\MikrotikController;
 use App\Controllers\Api\ResourceController;
 use App\Controllers\Api\TenantController;
 use App\Controllers\Api\TenantSettingsController;
@@ -51,6 +52,11 @@ return static function (Router $router): void {
         $r->get('/topology', [TopologyController::class, 'index'], ['tenant']);
         $r->post('/topology', [TopologyController::class, 'save'], ['tenant']);
         $r->post('/ai/analyze', [AiController::class, 'analyze'], ['tenant', 'perm:ai_analytics']);
+
+        // Live MikroTik PPPoE
+        $r->get('/pppoe-users', [MikrotikController::class, 'pppoeUsers'], ['tenant']);
+        $r->get('/routers/{id}/pppoe', [MikrotikController::class, 'routerPppoe'], ['tenant']);
+        $r->post('/routers/{id}/test', [MikrotikController::class, 'testRouter'], ['tenant']);
 
         // Billing
         $r->post('/billing/invoices', [BillingController::class, 'createInvoice'], ['tenant']);
