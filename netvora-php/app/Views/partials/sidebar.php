@@ -50,6 +50,7 @@ $menu = $superadmin ? [
     ]],
     ['INVENTORY', [
         ['MikroTik', 'fa-microchip', '/dashboard/mikrotik'],
+        ['PPPoE Users', 'fa-users-line', '/dashboard/pppoe-users'],
         ['ODP', 'fa-box-archive', '/dashboard/odp'],
         ['ACS (TR-069)', 'fa-satellite-dish', '/dashboard/acs'],
     ]],
