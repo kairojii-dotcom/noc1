@@ -34,7 +34,10 @@ final class MikrotikApiService
         $this->write('=name=' . $this->user, false);
         $this->write('=password=' . $this->pass);
         $resp = $this->read();
-        return !$this->hasError($resp);
+        if ($this->hasError($resp)) {
+            throw new \RuntimeException('Login MikroTik gagal');
+        }
+        return true;
     }
 
     /** Fetch system resource (cpu, memory, uptime, board). */
@@ -44,10 +47,24 @@ final class MikrotikApiService
         return $this->parseFirst($this->read());
     }
 
-    /** List active PPPoE sessions. */
+    /** List active PPPoE sessions (/ppp active print). */
     public function pppoeActive(): array
     {
         $this->write('/ppp/active/print');
+        return $this->parseRecords($this->read());
+    }
+
+    /** List configured PPP secrets (/ppp secret print). */
+    public function pppSecrets(): array
+    {
+        $this->write('/ppp/secret/print');
+        return $this->parseRecords($this->read());
+    }
+
+    /** List PPP profiles so profile rate-limit can be shown beside users. */
+    public function pppProfiles(): array
+    {
+        $this->write('/ppp/profile/print');
         return $this->parseRecords($this->read());
     }
 
@@ -77,6 +94,9 @@ final class MikrotikApiService
     // ---- low-level RouterOS API word protocol ----
     private function write(string $word, bool $sentence = true): void
     {
+        if (!$this->socket) {
+            throw new \RuntimeException('Socket MikroTik belum tersambung');
+        }
         $this->writeLen(strlen($word));
         fwrite($this->socket, $word);
         if ($sentence) {
@@ -101,18 +121,31 @@ final class MikrotikApiService
 
     private function readLen(): int
     {
-        $b = ord(fread($this->socket, 1));
+        $raw = fread($this->socket, 1);
+        if ($raw === false || $raw === '') {
+            throw new \RuntimeException('Timeout membaca response MikroTik');
+        }
+        $b = ord($raw);
         if (($b & 0x80) === 0x00) {
             return $b;
         }
         if (($b & 0xC0) === 0x80) {
-            return (($b & 0x3F) << 8) + ord(fread($this->socket, 1));
+            return (($b & 0x3F) << 8) + ord($this->readByte());
         }
         if (($b & 0xE0) === 0xC0) {
-            return (($b & 0x1F) << 16) + (ord(fread($this->socket, 1)) << 8) + ord(fread($this->socket, 1));
+            return (($b & 0x1F) << 16) + (ord($this->readByte()) << 8) + ord($this->readByte());
         }
-        return (ord(fread($this->socket, 1)) << 24) + (ord(fread($this->socket, 1)) << 16)
-             + (ord(fread($this->socket, 1)) << 8) + ord(fread($this->socket, 1));
+        return (ord($this->readByte()) << 24) + (ord($this->readByte()) << 16)
+             + (ord($this->readByte()) << 8) + ord($this->readByte());
+    }
+
+    private function readByte(): string
+    {
+        $raw = fread($this->socket, 1);
+        if ($raw === false || $raw === '') {
+            throw new \RuntimeException('Timeout membaca response MikroTik');
+        }
+        return $raw;
     }
 
     /** @return string[] flat list of words returned by the device. */
@@ -122,12 +155,6 @@ final class MikrotikApiService
         while (true) {
             $len = $this->readLen();
             if ($len === 0) {
-                // end of sentence; peek if more follows
-                $meta = stream_get_meta_data($this->socket);
-                if ($meta['unread_bytes'] <= 0 && feof($this->socket)) {
-                    break;
-                }
-                // continue to next sentence; stop on !done captured below
                 if (!empty($out) && in_array('!done', $out, true)) {
                     break;
                 }
@@ -136,8 +163,8 @@ final class MikrotikApiService
             $word = '';
             while (strlen($word) < $len) {
                 $chunk = fread($this->socket, $len - strlen($word));
-                if ($chunk === '' || $chunk === false) {
-                    break;
+                if ($chunk === false || $chunk === '') {
+                    throw new \RuntimeException('Timeout membaca response MikroTik');
                 }
                 $word .= $chunk;
             }
