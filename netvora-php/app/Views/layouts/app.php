@@ -41,6 +41,7 @@
 <!-- App -->
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/modules.js"></script>
+<script src="/assets/js/integrations.js"></script>
 <script src="/assets/js/engine.js"></script>
 <?= $pageScript ?? '' ?>
 </body>
