@@ -14,6 +14,7 @@ final class Request
     private array $query;
     private array $body;
     private array $headers;
+    public readonly string $rawBody;
     /** Filled by the router after pattern matching. */
     public array $params = [];
     /** Authenticated user claims (set by AuthMiddleware). */
@@ -26,7 +27,8 @@ final class Request
         $this->path    = rtrim(parse_url($uri, PHP_URL_PATH) ?: '/', '/') ?: '/';
         $this->query   = $_GET ?? [];
         $this->headers = self::collectHeaders();
-        $this->body    = self::parseBody();
+        $this->rawBody = file_get_contents('php://input') ?: '';
+        $this->body    = $this->parseBody();
     }
 
     private static function collectHeaders(): array
@@ -44,15 +46,20 @@ final class Request
         return $headers;
     }
 
-    private static function parseBody(): array
+    private function parseBody(): array
     {
-        $raw = file_get_contents('php://input') ?: '';
+        $raw = $this->rawBody;
         $ct  = $_SERVER['CONTENT_TYPE'] ?? '';
         if (str_contains($ct, 'application/json') && $raw !== '') {
             $decoded = json_decode($raw, true);
             return is_array($decoded) ? $decoded : [];
         }
         return $_POST ?? [];
+    }
+
+    public function rawInput(): string
+    {
+        return $this->rawBody;
     }
 
     public function input(string $key, mixed $default = null): mixed

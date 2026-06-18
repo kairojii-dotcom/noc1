@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Controllers\Api\AcsController;
 use App\Controllers\Api\AdminResourceController;
 use App\Controllers\Api\AiController;
 use App\Controllers\Api\AuthController;
+use App\Controllers\Api\BillingController;
 use App\Controllers\Api\DashboardController;
 use App\Controllers\Api\HealthController;
 use App\Controllers\Api\ResourceController;
@@ -19,6 +21,9 @@ return static function (Router $router): void {
     $router->post('/api/auth/login', [AuthController::class, 'login'], ['ratelimit']);
     $router->post('/api/auth/refresh', [AuthController::class, 'refresh'], ['ratelimit']);
     $router->post('/api/auth/logout', [AuthController::class, 'logout']);
+
+    // PUBLIC payment gateway webhooks (Midtrans / Xendit)
+    $router->post('/api/webhooks/payment/{provider}', [BillingController::class, 'webhook']);
 
     // ---- Authenticated ----
     $router->group('/api', ['auth'], function (Router $r): void {
@@ -46,6 +51,18 @@ return static function (Router $router): void {
         $r->get('/topology', [TopologyController::class, 'index'], ['tenant']);
         $r->post('/topology', [TopologyController::class, 'save'], ['tenant']);
         $r->post('/ai/analyze', [AiController::class, 'analyze'], ['tenant', 'perm:ai_analytics']);
+
+        // Billing
+        $r->post('/billing/invoices', [BillingController::class, 'createInvoice'], ['tenant']);
+        $r->post('/billing/generate', [BillingController::class, 'generate'], ['tenant']);
+        $r->post('/billing/pay', [BillingController::class, 'payManual'], ['tenant']);
+        $r->post('/billing/payment-link', [BillingController::class, 'paymentLink'], ['tenant']);
+        $r->post('/billing/auto-suspend', [BillingController::class, 'autoSuspend'], ['tenant']);
+
+        // ACS (TR-069) management
+        $r->get('/acs/devices', [AcsController::class, 'index'], ['tenant']);
+        $r->get('/acs/devices/{id}', [AcsController::class, 'show'], ['tenant']);
+        $r->post('/acs/devices/{id}/task', [AcsController::class, 'task'], ['tenant']);
 
         // Generic tenant resources (register LAST to avoid shadowing specific paths above)
         $r->get('/{resource}', [ResourceController::class, 'index'], ['tenant']);

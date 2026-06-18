@@ -95,6 +95,20 @@ Owner tenant dibuat otomatis saat Super Admin menambah tenant (email &amp; passw
 
 ---
 
+## 💳 Billing &amp; Payment Gateway
+- Auto-generate invoice dari subscription jatuh tempo (`POST /api/billing/generate` &amp; cron `billing`).
+- Bayar manual (`POST /api/billing/pay`) → invoice `paid` + **pelanggan auto-aktif** (unsuspend).
+- Payment link **Midtrans (Snap)** / **Xendit (Invoice)** (`POST /api/billing/payment-link`) — keys per-tenant di Settings → Billing.
+- Webhook publik: `POST /api/webhooks/payment/{midtrans|xendit}` → otomatis tandai lunas + unsuspend.
+- Auto-suspend (isolir) pelanggan menunggak via cron `php cron/scheduler.php billing`.
+
+## 📡 ACS (TR-069 / CWMP)
+- Endpoint CWMP publik: `POST /acs/{tenant_id}` (set sebagai ACS URL di CPE).
+- Inform → device auto-register (serial, vendor, model) + simpan parameter; **auto-provision** saat `0 BOOTSTRAP`.
+- Task queue remote (eksekusi saat Inform berikutnya): **Reboot, Factory Reset, WiFi Config, WAN/PPPoE Config, Firmware Download (Download RPC), Get/Set Parameter**.
+- REST: `GET /api/acs/devices`, `GET /api/acs/devices/{id}`, `POST /api/acs/devices/{id}/task`.
+- Mendukung Huawei, ZTE, Fiberhome, Nokia, TP-Link, VSOL, Raisecom, Dasan (TR-098/TR-181 paths).
+
 ## 🔌 REST API (ringkas)
 
 | Method | Endpoint | Keterangan |

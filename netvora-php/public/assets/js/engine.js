@@ -21,6 +21,7 @@ function modulePage() {
                 case 'maps': this.loadMaps(); break;
                 case 'topology': this.loadTopology(); break;
                 case 'ai': this.loading = false; break;
+                case 'acs': this.loadAcs(); break;
                 case 'tenant-settings': this.loadSettings(); break;
                 case 'sa-monitoring': this.loadMonitoring(); break;
                 case 'reports': this.loadReports(); break;
@@ -188,6 +189,58 @@ function modulePage() {
         /* ---------- Backup ---------- */
         backupDone: false,
         runBackup() { this.backupDone = true; NV.toast('Backup dijadwalkan via cron (php cron/scheduler.php). Lihat README.'); },
+
+        /* ---------- Billing actions ---------- */
+        async generateInvoices() {
+            try { const { data } = await NV.api('/billing/generate', { method:'POST', body:{} }); NV.toast((data.generated||0)+' invoice dibuat'); this.loadList(); }
+            catch (e) { NV.toast(e.message, 'err'); }
+        },
+        async payInvoice(row) {
+            const amt = prompt('Nominal pembayaran:', row.total); if (amt === null) return;
+            try { await NV.api('/billing/pay', { method:'POST', body:{ invoice_id: row.id, amount: parseFloat(amt), method:'manual' } }); NV.toast('Pembayaran dicatat & pelanggan diaktifkan'); this.loadList(); }
+            catch (e) { NV.toast(e.message, 'err'); }
+        },
+        async paymentLink(row) {
+            try { const { data } = await NV.api('/billing/payment-link', { method:'POST', body:{ invoice_id: row.id } });
+                if (data.url) { window.open(data.url, '_blank'); NV.toast('Link '+data.provider+' dibuka'); }
+                else NV.toast('Link kosong — cek konfigurasi gateway', 'err');
+            } catch (e) { NV.toast(e.message, 'err'); }
+        },
+        async runRowAction(action, row) { if (this[action.call]) await this[action.call](row); },
+        async runTopAction(action) { if (this[action.call]) await this[action.call](); },
+
+        /* ---------- ACS TR-069 ---------- */
+        acsDevices: [], acsDetail: null, acsModal: false,
+        async loadAcs() {
+            this.loading = false;
+            try { const res = await NV.api('/acs/devices?per_page=100'); this.acsDevices = res.data; }
+            catch (e) { NV.toast(e.message, 'err'); }
+        },
+        async acsTask(id, type, payload = {}) {
+            try { await NV.api('/acs/devices/' + id + '/task', { method:'POST', body:{ type, payload } });
+                NV.toast('Task "' + type + '" dijadwalkan (eksekusi saat inform berikutnya)'); }
+            catch (e) { NV.toast(e.message, 'err'); }
+        },
+        async acsReboot(d) { if (confirm('Reboot ' + d.serial + '?')) this.acsTask(d.id, 'reboot'); },
+        async acsReset(d) { if (confirm('FACTORY RESET ' + d.serial + '? Semua config CPE hilang.')) this.acsTask(d.id, 'factory_reset'); },
+        async acsWifi(d) {
+            const ssid = prompt('SSID WiFi baru:', ''); if (ssid === null) return;
+            const password = prompt('Password WiFi (min 8):', ''); if (password === null) return;
+            this.acsTask(d.id, 'wifi_config', { ssid, password });
+        },
+        async acsWan(d) {
+            const pppoe_user = prompt('PPPoE Username:', ''); if (pppoe_user === null) return;
+            const pppoe_pass = prompt('PPPoE Password:', ''); if (pppoe_pass === null) return;
+            this.acsTask(d.id, 'wan_config', { pppoe_user, pppoe_pass });
+        },
+        async acsFirmware(d) {
+            const url = prompt('URL file firmware (.bin):', 'http://'); if (!url) return;
+            this.acsTask(d.id, 'download', { url, file_type: '1 Firmware Upgrade Image' });
+        },
+        async acsShow(d) {
+            try { const { data } = await NV.api('/acs/devices/' + d.id); this.acsDetail = data; this.acsModal = true; }
+            catch (e) { NV.toast(e.message, 'err'); }
+        },
     };
 }
 window.modulePage = modulePage;

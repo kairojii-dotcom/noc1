@@ -10,7 +10,9 @@
         "ext-json": "*",
         "ext-openssl": "*",
         "ext-curl": "*",
-        "ext-snmp": "*"
+        "ext-snmp": "*",
+        "ext-mbstring": "*",
+        "ext-simplexml": "*"
     },
     "autoload": {
         "psr-4": {

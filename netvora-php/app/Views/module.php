@@ -14,6 +14,11 @@
             <template x-if="type==='crud' && !cfg.readonly">
                 <button class="btn btn-primary" @click="openCreate()" data-testid="module-create"><i class="fa-solid fa-plus"></i> Tambah</button>
             </template>
+            <template x-if="type==='crud' && cfg.topActions">
+                <template x-for="a in cfg.topActions" :key="a.label">
+                    <button class="btn btn-ghost" @click="runTopAction(a)"><i class="fa-solid" :class="a.icon"></i> <span x-text="a.label"></span></button>
+                </template>
+            </template>
         </div>
     </div>
 
@@ -48,6 +53,9 @@
                                 <template x-for="col in cfg.columns" :key="col.key"><td x-html="cell(row,col)"></td></template>
                                 <td style="text-align:right">
                                     <div class="flex gap-2" style="justify-content:flex-end">
+                                        <template x-if="cfg.rowActions"><template x-for="a in cfg.rowActions" :key="a.label">
+                                            <i class="fa-solid icon-btn" :class="a.icon" style="width:30px;height:30px;font-size:11px;color:var(--green)" @click="runRowAction(a,row)" :title="a.label"></i>
+                                        </template></template>
                                         <template x-if="!cfg.readonly">
                                             <i class="fa-solid fa-pen icon-btn" style="width:30px;height:30px;font-size:11px" @click="openEdit(row)"></i>
                                         </template>
@@ -187,6 +195,64 @@
             <div x-show="backupDone" class="chip active" style="margin-top:16px;display:inline-flex">Backup dijadwalkan</div>
         </div>
     </template>
+
+    <!-- ============ ACS (TR-069) ============ -->
+    <template x-if="type==='acs'">
+        <div class="glass panel">
+            <div class="panel-head"><span class="panel-title"><i class="fa-solid fa-satellite-dish text-green"></i> Perangkat ACS (TR-069)</span>
+                <span class="pill" style="font-size:12px">ACS URL CPE: <span class="mono" x-text="location.origin + '/acs/' + (NV.user()?.tenant_id||'TENANT_ID')"></span></span>
+            </div>
+            <div style="overflow-x:auto">
+                <table class="nv" data-testid="acs-table">
+                    <thead><tr><th>Serial</th><th>Vendor</th><th>Model</th><th>IP</th><th>Status</th><th>Last Inform</th><th style="text-align:right">Remote Action</th></tr></thead>
+                    <tbody>
+                        <template x-for="d in acsDevices" :key="d.id">
+                            <tr>
+                                <td style="font-weight:600" x-text="d.serial"></td>
+                                <td x-text="d.vendor || d.manufacturer || '-'"></td>
+                                <td x-text="d.product_class || d.model || '-'"></td>
+                                <td class="mono" x-text="d.ip_address || '-'"></td>
+                                <td><span class="chip" :class="d.status" x-text="d.status"></span></td>
+                                <td style="color:var(--muted);font-size:12.5px" x-text="NV.timeAgo(d.last_inform)"></td>
+                                <td style="text-align:right">
+                                    <div class="flex gap-2" style="justify-content:flex-end">
+                                        <i class="fa-solid fa-circle-info icon-btn" style="width:30px;height:30px;font-size:11px" @click="acsShow(d)" title="Detail"></i>
+                                        <i class="fa-solid fa-power-off icon-btn" style="width:30px;height:30px;font-size:11px;color:var(--amber)" @click="acsReboot(d)" title="Reboot"></i>
+                                        <i class="fa-solid fa-wifi icon-btn" style="width:30px;height:30px;font-size:11px;color:var(--green)" @click="acsWifi(d)" title="WiFi Config"></i>
+                                        <i class="fa-solid fa-ethernet icon-btn" style="width:30px;height:30px;font-size:11px;color:var(--blue)" @click="acsWan(d)" title="WAN/PPPoE"></i>
+                                        <i class="fa-solid fa-download icon-btn" style="width:30px;height:30px;font-size:11px;color:var(--violet)" @click="acsFirmware(d)" title="Firmware"></i>
+                                        <i class="fa-solid fa-arrows-rotate icon-btn" style="width:30px;height:30px;font-size:11px;color:var(--red)" @click="acsReset(d)" title="Factory Reset"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                        <template x-if="acsDevices.length===0"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">Belum ada CPE terhubung. Set ACS URL di atas pada perangkat ONU/router pelanggan (TR-069), perangkat akan muncul otomatis saat Inform.</td></tr></template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </template>
+
+    <!-- ACS detail modal -->
+    <div x-show="acsModal" x-cloak style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;display:grid;place-items:center;padding:20px" @click.self="acsModal=false">
+        <div class="glass panel" style="width:100%;max-width:640px;max-height:88vh;overflow:auto">
+            <div class="panel-head"><span class="panel-title">Detail CPE — <span x-text="acsDetail?.serial"></span></span><i class="fa-solid fa-xmark" style="cursor:pointer;color:var(--muted)" @click="acsModal=false"></i></div>
+            <div class="panel-title" style="font-size:12px;margin-bottom:8px">Parameters</div>
+            <table class="nv" style="margin-bottom:18px"><tbody>
+                <template x-for="p in (acsDetail?.parameters||[])" :key="p.name">
+                    <tr><td class="mono" style="font-size:11px" x-text="p.name"></td><td x-text="p.value"></td></tr>
+                </template>
+                <template x-if="!(acsDetail?.parameters||[]).length"><tr><td style="color:var(--muted)">Belum ada parameter tersimpan.</td></tr></template>
+            </tbody></table>
+            <div class="panel-title" style="font-size:12px;margin-bottom:8px">Riwayat Task</div>
+            <table class="nv"><tbody>
+                <template x-for="t in (acsDetail?.tasks||[])" :key="t.id">
+                    <tr><td x-text="t.type"></td><td><span class="chip" :class="t.status==='done'?'active':(t.status==='failed'?'offline':'warning')" x-text="t.status"></span></td><td style="color:var(--muted)" x-text="NV.timeAgo(t.created_at)"></td></tr>
+                </template>
+                <template x-if="!(acsDetail?.tasks||[]).length"><tr><td style="color:var(--muted)">Belum ada task.</td></tr></template>
+            </tbody></table>
+        </div>
+    </div>
 
     <!-- ============ CRUD MODAL ============ -->
     <div x-show="modalOpen" x-cloak style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:200;display:grid;place-items:center;padding:20px" @click.self="modalOpen=false">

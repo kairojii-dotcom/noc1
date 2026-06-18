@@ -9,10 +9,11 @@ RUN apk add --no-cache \
         net-snmp-dev \
         net-snmp-tools \
         oniguruma-dev \
+        libxml2-dev \
         curl \
         bash \
         $PHPIZE_DEPS \
-    && docker-php-ext-install pdo pdo_pgsql pgsql \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring simplexml \
     && pecl install snmp 2>/dev/null || true \
     && docker-php-ext-enable snmp 2>/dev/null || true \
     && apk del $PHPIZE_DEPS

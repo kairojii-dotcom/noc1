@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\Api\AcsController;
 use App\Controllers\Web\PageController;
 use App\Core\Router;
 
@@ -11,6 +12,9 @@ return static function (Router $router): void {
     $router->get('/superadmin', [PageController::class, 'superadmin']);
     $router->get('/dashboard', [PageController::class, 'tenant']);
     $router->get('/tv', [PageController::class, 'tvMode']);
+
+    // PUBLIC TR-069 / CWMP endpoint — CPE ACS URL: https://host/acs/{tenant_id}
+    $router->post('/acs/{tenant}', [AcsController::class, 'cwmp']);
 
     // Generic module pages: /superadmin/{module} and /dashboard/{module}
     $router->get('/{scope}/{module}', [PageController::class, 'module']);

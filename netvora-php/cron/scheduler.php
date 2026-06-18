@@ -27,27 +27,14 @@ switch ($task) {
         break;
 
     case 'billing':
-        // Auto-generate monthly invoices for due subscriptions
-        $rows = Database::execute(
-            "INSERT INTO invoices (tenant_id, customer_id, number, amount, total, status, due_date)
-             SELECT s.tenant_id, s.customer_id,
-                    'INV-' || to_char(now(),'YYYYMM') || '-' || substr(md5(random()::text),1,6),
-                    s.amount, s.amount, 'unpaid', s.next_due
-             FROM subscriptions s
-             WHERE s.status='active' AND s.next_due <= current_date
-               AND NOT EXISTS (
-                 SELECT 1 FROM invoices i WHERE i.customer_id=s.customer_id
-                 AND date_trunc('month', i.created_at)=date_trunc('month', now()))"
-        );
-        echo "  generated $rows invoice(s)\n";
-        // Auto suspend overdue customers
-        $sus = Database::execute(
-            "UPDATE customers SET status='isolir'
-             WHERE id IN (SELECT customer_id FROM invoices WHERE status='overdue')"
-        );
-        echo "  suspended $sus customer(s)\n";
-        // Mark overdue
-        Database::execute("UPDATE invoices SET status='overdue' WHERE status='unpaid' AND due_date < current_date");
+        // Per-tenant: generate due invoices + auto-suspend overdue customers
+        $billing = new \App\Services\Billing\BillingService();
+        $genTotal = 0; $susTotal = 0;
+        foreach (Database::select("SELECT id FROM tenants WHERE status='active'") as $t) {
+            $genTotal += $billing->generateDueInvoices($t['id']);
+            $susTotal += $billing->autoSuspendOverdue($t['id']);
+        }
+        echo "  generated $genTotal invoice(s), suspended $susTotal customer(s)\n";
         break;
 
     case 'cleanup':

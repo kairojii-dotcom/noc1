@@ -43,9 +43,15 @@ $menu = $superadmin ? [
     ['TICKETING', [
         ['Tiket', 'fa-ticket', '/dashboard/tiket'],
     ]],
+    ['BILLING', [
+        ['Invoice', 'fa-file-invoice', '/dashboard/invoice'],
+        ['Payment', 'fa-credit-card', '/dashboard/payment'],
+        ['Subscription', 'fa-rotate', '/dashboard/subscription'],
+    ]],
     ['INVENTORY', [
         ['MikroTik', 'fa-microchip', '/dashboard/mikrotik'],
         ['ODP', 'fa-box-archive', '/dashboard/odp'],
+        ['ACS (TR-069)', 'fa-satellite-dish', '/dashboard/acs'],
     ]],
     ['REPORTS', [
         ['Laporan', 'fa-file-lines', '/dashboard/laporan'],

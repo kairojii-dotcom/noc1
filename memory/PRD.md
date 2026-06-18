@@ -59,6 +59,15 @@ JWT + Refresh Token (rotasi) + RBAC. Multi-tenant isolation (repo scoping + RLS)
 - ✅ Sidebar real URL + active-state; routing fix (API didahulukan dari web catch-all)
 - ✅ Divalidasi: semua 26 endpoint HTTP 200 + 7 halaman web 200 + screenshot (Routers CRUD, Topology editor, Semua User)
 
+## Update 2026-06-18 (iterasi 3) — Billing + ACS TR-069
+- ✅ Billing: auto-generate invoice dari subscription, bayar manual → auto-unsuspend, payment link Midtrans/Xendit, webhook publik, auto-suspend menunggak (cron)
+- ✅ Services: `BillingService`, `PaymentGatewayService` (Midtrans Snap + Xendit Invoice), `BillingController`
+- ✅ ACS TR-069/CWMP: endpoint publik `/acs/{tenant}`, Inform→auto-register+params, auto-provision (0 BOOTSTRAP), task queue (reboot/reset/wifi/wan/firmware/get/set param)
+- ✅ Services: `Tr069` (SOAP builder/parser), `AcsService`, `AcsController`; migration 003 (acs_devices/parameters/tasks/profiles + RLS)
+- ✅ Frontend: menu BILLING (Invoice/Payment/Subscription) + ACS, engine handlers, UI actions
+- ✅ Divalidasi LIVE: billing isolir→active flow ✓, webhook xendit PAID ✓, full CWMP lifecycle (Inform→register→WiFi SetParameterValues RPC→task done) ✓, screenshot ACS page ✓
+- ✅ Dockerfile + composer: tambah ext mbstring & simplexml
+
 ## Next Tasks
-1. User host di Supabase + server PHP (ikuti README).
-2. Implement modul Billing gateway nyata (Midtrans/Xendit) & ACS TR-069 sesuai prioritas paket.
+1. Host di Supabase + server PHP (ikuti README).
+2. Opsional lanjutan: OLT/Mikrotik auto-discovery, ZTP, Inventory QR, Customer Portal, Radius.
