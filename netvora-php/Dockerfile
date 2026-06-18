@@ -27,7 +27,9 @@ COPY . /var/www
 RUN composer install --no-dev --optimize-autoloader --no-interaction 2>/dev/null || true \
     && mkdir -p /var/www/storage && chown -R www-data:www-data /var/www
 
-
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+CMD curl -fsS http://127.0.0.1:9000/ping || curl -fsS http://127.0.0.1/api/health || exit 1
 
 EXPOSE 9000
 CMD ["php-fpm"]
