@@ -1,0 +1,22 @@
+{
+  "vendor": "bdcom",
+  "models": ["P3310", "P3310B", "P3616", "GP3600"],
+  "transport": "snmp",
+  "default_community": "public",
+  "oids": {
+    "system_name": ".1.3.6.1.2.1.1.5.0",
+    "system_uptime": ".1.3.6.1.2.1.1.3.0",
+    "if_name": ".1.3.6.1.2.1.31.1.1.1.1",
+    "if_oper_status": ".1.3.6.1.2.1.2.2.1.8",
+    "onu_rx_power": ".1.3.6.1.4.1.3320.101.10.5.1.5",
+    "onu_tx_power": ".1.3.6.1.4.1.3320.101.10.5.1.6",
+    "onu_status": ".1.3.6.1.4.1.3320.101.10.1.1.26",
+    "onu_serial": ".1.3.6.1.4.1.3320.101.10.1.1.3",
+    "onu_distance": ".1.3.6.1.4.1.3320.101.10.1.1.27"
+  },
+  "value_maps": {
+    "rx_power": { "divider": 10, "unit": "dBm" },
+    "distance": { "divider": 1, "unit": "m" },
+    "status": { "1": "online", "2": "offline", "3": "los" }
+  }
+}
