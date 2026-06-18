@@ -1,62 +1,60 @@
 <?php
 /** @var string $scope */
 $superadmin = ($scope ?? '') === 'superadmin';
+$current = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/') ?: '/';
 
 $menu = $superadmin ? [
     ['DASHBOARD', [
-        ['Dashboard', 'fa-gauge-high', '/superadmin', true],
+        ['Dashboard', 'fa-gauge-high', '/superadmin'],
     ]],
     ['TENANT MANAGEMENT', [
-        ['Semua Tenant', 'fa-building', '/superadmin#tenants'],
-        ['Tambah Tenant', 'fa-circle-plus', '/superadmin#add'],
-        ['Paket Tenant', 'fa-box', '/superadmin#packages'],
-        ['Suspend Tenant', 'fa-pause', '/superadmin#suspend'],
+        ['Semua Tenant', 'fa-building', '/superadmin'],
+        ['Paket Tenant', 'fa-box', '/superadmin/paket-tenant'],
     ]],
     ['USER MANAGEMENT', [
-        ['Semua User', 'fa-users', '/superadmin#users'],
-        ['Role Permission', 'fa-user-shield', '/superadmin#roles'],
+        ['Semua User', 'fa-users', '/superadmin/semua-user'],
+        ['Role Permission', 'fa-user-shield', '/superadmin/role-permission'],
     ]],
     ['SYSTEM', [
-        ['Monitoring', 'fa-wave-square', '/superadmin#monitoring'],
-        ['Audit Log', 'fa-clipboard-list', '/superadmin#audit'],
-        ['Backup', 'fa-database', '/superadmin#backup'],
-        ['SMTP', 'fa-envelope', '/superadmin#smtp'],
-        ['WhatsApp Gateway', 'fa-whatsapp', '/superadmin#wa'],
-        ['System Settings', 'fa-gear', '/superadmin#settings'],
+        ['Monitoring', 'fa-wave-square', '/superadmin/monitoring'],
+        ['Audit Log', 'fa-clipboard-list', '/superadmin/audit-log'],
+        ['Backup', 'fa-database', '/superadmin/backup'],
+        ['SMTP', 'fa-envelope', '/superadmin/smtp'],
+        ['WhatsApp Gateway', 'fa-whatsapp', '/superadmin/whatsapp-gateway'],
+        ['System Settings', 'fa-gear', '/superadmin/system-settings'],
     ]],
     ['BILLING', [
-        ['Subscription', 'fa-rotate', '/superadmin#subs'],
-        ['Invoice', 'fa-file-invoice', '/superadmin#invoice'],
-        ['Payment', 'fa-credit-card', '/superadmin#payment'],
+        ['Subscription', 'fa-rotate', '/superadmin/subscription'],
+        ['Invoice', 'fa-file-invoice', '/superadmin/invoice'],
+        ['Payment', 'fa-credit-card', '/superadmin/payment'],
     ]],
 ] : [
     ['MONITORING', [
-        ['Dashboard', 'fa-gauge-high', '/dashboard', true],
-        ['Overview', 'fa-eye', '/dashboard#overview'],
-        ['Routers', 'fa-network-wired', '/dashboard#routers'],
-        ['OLT', 'fa-server', '/dashboard#olt'],
-        ['ONU', 'fa-hard-drive', '/dashboard#onu'],
-        ['Pelanggan', 'fa-users', '/dashboard#customers'],
-        ['Traffic', 'fa-chart-line', '/dashboard#traffic'],
-        ['Topologi', 'fa-diagram-project', '/dashboard#topology'],
-        ['Maps', 'fa-map-location-dot', '/dashboard#maps'],
-        ['Alerts', 'fa-bell', '/dashboard#alerts'],
+        ['Dashboard', 'fa-gauge-high', '/dashboard'],
+        ['Routers', 'fa-network-wired', '/dashboard/routers'],
+        ['OLT', 'fa-server', '/dashboard/olt'],
+        ['ONU', 'fa-hard-drive', '/dashboard/onu'],
+        ['Pelanggan', 'fa-users', '/dashboard/pelanggan'],
+        ['Traffic', 'fa-chart-line', '/dashboard/traffic'],
+        ['Topologi', 'fa-diagram-project', '/dashboard/topologi'],
+        ['Maps', 'fa-map-location-dot', '/dashboard/maps'],
+        ['Alerts', 'fa-bell', '/dashboard/alerts'],
     ]],
     ['TICKETING', [
-        ['Tiket', 'fa-ticket', '/dashboard#tickets'],
+        ['Tiket', 'fa-ticket', '/dashboard/tiket'],
     ]],
     ['INVENTORY', [
-        ['MikroTik', 'fa-microchip', '/dashboard#mikrotik'],
-        ['ODP', 'fa-box-archive', '/dashboard#odp'],
+        ['MikroTik', 'fa-microchip', '/dashboard/mikrotik'],
+        ['ODP', 'fa-box-archive', '/dashboard/odp'],
     ]],
     ['REPORTS', [
-        ['Laporan', 'fa-file-lines', '/dashboard#reports'],
-        ['Logs', 'fa-list', '/dashboard#logs'],
+        ['Laporan', 'fa-file-lines', '/dashboard/laporan'],
+        ['Logs', 'fa-list', '/dashboard/logs'],
     ]],
     ['ADMIN', [
-        ['Users', 'fa-user-gear', '/dashboard#users'],
-        ['AI Analytics', 'fa-brain', '/dashboard#ai'],
-        ['Settings', 'fa-gear', '/dashboard#settings'],
+        ['Users', 'fa-user-gear', '/dashboard/users'],
+        ['AI Analytics', 'fa-brain', '/dashboard/ai-analytics'],
+        ['Settings', 'fa-gear', '/dashboard/settings'],
     ]],
 ];
 ?>
@@ -68,8 +66,8 @@ $menu = $superadmin ? [
 
     <?php foreach ($menu as [$section, $items]): ?>
         <div class="nav-section"><?= $section ?></div>
-        <?php foreach ($items as $it): ?>
-            <a class="nav-item <?= ($it[3] ?? false) ? 'active' : '' ?>" href="<?= $it[2] ?>">
+        <?php foreach ($items as $it): $active = ($it[2] === $current); ?>
+            <a class="nav-item <?= $active ? 'active' : '' ?>" href="<?= $it[2] ?>">
                 <i class="fa-solid <?= $it[1] ?>"></i><span><?= $it[0] ?></span>
             </a>
         <?php endforeach; ?>

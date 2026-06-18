@@ -51,6 +51,14 @@ JWT + Refresh Token (rotasi) + RBAC. Multi-tenant isolation (repo scoping + RLS)
 - P2: Swagger/OpenAPI, Webhook marketplace, SSO, Grafana/Prometheus export, Syslog/Netflow/SNMP Trap
 - P2: Supabase Realtime channel binding (saat ini polling 15s)
 
+## Update 2026-06-18 (iterasi 2) — Semua menu fungsional
+- ✅ Module engine generik (`modules.js` + `engine.js` + `module.php`): semua menu sidebar bisa dibuka & berfungsi
+- ✅ Super Admin: Paket, Semua User, Role Permission, Audit Log, Subscription, Invoice, Payment (CRUD `/api/admin/{resource}`), Monitoring, Backup, SMTP/WA/System (info)
+- ✅ Tenant NOC: Routers, OLT, ONU, ODP, Pelanggan, Alerts, Tiket, Users, Logs (CRUD), Traffic (charts), Maps (Leaflet), Topologi (Vis editor + save), AI Analytics, Laporan (export CSV), Settings (profile/SMTP/WA)
+- ✅ Endpoint baru: `AdminResourceController` (global), `TenantSettingsController`, `TopologyController`
+- ✅ Sidebar real URL + active-state; routing fix (API didahulukan dari web catch-all)
+- ✅ Divalidasi: semua 26 endpoint HTTP 200 + 7 halaman web 200 + screenshot (Routers CRUD, Topology editor, Semua User)
+
 ## Next Tasks
 1. User host di Supabase + server PHP (ikuti README).
-2. Implement modul Billing & ACS sesuai prioritas paket.
+2. Implement modul Billing gateway nyata (Midtrans/Xendit) & ACS TR-069 sesuai prioritas paket.

@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Controllers\Api\AdminResourceController;
 use App\Controllers\Api\AiController;
 use App\Controllers\Api\AuthController;
 use App\Controllers\Api\DashboardController;
 use App\Controllers\Api\HealthController;
 use App\Controllers\Api\ResourceController;
 use App\Controllers\Api\TenantController;
+use App\Controllers\Api\TenantSettingsController;
+use App\Controllers\Api\TopologyController;
 use App\Core\Router;
 
 return static function (Router $router): void {
@@ -21,7 +24,7 @@ return static function (Router $router): void {
     $router->group('/api', ['auth'], function (Router $r): void {
         $r->get('/auth/me', [AuthController::class, 'me']);
 
-        // Super Admin scope
+        // ===== Super Admin scope =====
         $r->get('/superadmin/dashboard', [DashboardController::class, 'superadmin'], ['role:super_admin']);
         $r->get('/tenants', [TenantController::class, 'index'], ['role:super_admin']);
         $r->post('/tenants', [TenantController::class, 'store'], ['role:super_admin']);
@@ -30,11 +33,21 @@ return static function (Router $router): void {
         $r->patch('/tenants/{id}/status', [TenantController::class, 'setStatus'], ['role:super_admin']);
         $r->delete('/tenants/{id}', [TenantController::class, 'destroy'], ['role:super_admin']);
 
-        // Tenant NOC scope (RLS enforced)
+        // Global CRUD: users, packages, roles, audit_logs, subscriptions, invoices, payments
+        $r->get('/admin/{resource}', [AdminResourceController::class, 'index'], ['role:super_admin']);
+        $r->post('/admin/{resource}', [AdminResourceController::class, 'store'], ['role:super_admin']);
+        $r->put('/admin/{resource}/{id}', [AdminResourceController::class, 'update'], ['role:super_admin']);
+        $r->delete('/admin/{resource}/{id}', [AdminResourceController::class, 'destroy'], ['role:super_admin']);
+
+        // ===== Tenant NOC scope (RLS enforced) =====
         $r->get('/dashboard', [DashboardController::class, 'tenant'], ['tenant']);
+        $r->get('/tenant/profile', [TenantSettingsController::class, 'show'], ['tenant']);
+        $r->put('/tenant/profile', [TenantSettingsController::class, 'update'], ['tenant']);
+        $r->get('/topology', [TopologyController::class, 'index'], ['tenant']);
+        $r->post('/topology', [TopologyController::class, 'save'], ['tenant']);
         $r->post('/ai/analyze', [AiController::class, 'analyze'], ['tenant', 'perm:ai_analytics']);
 
-        // Generic tenant resources: routers, olts, onus, customers, alerts, tickets
+        // Generic tenant resources (register LAST to avoid shadowing specific paths above)
         $r->get('/{resource}', [ResourceController::class, 'index'], ['tenant']);
         $r->post('/{resource}', [ResourceController::class, 'store'], ['tenant']);
         $r->get('/{resource}/{id}', [ResourceController::class, 'show'], ['tenant']);

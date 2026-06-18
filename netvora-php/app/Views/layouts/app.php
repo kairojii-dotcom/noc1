@@ -40,6 +40,8 @@
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.min.js"></script>
 <!-- App -->
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/modules.js"></script>
+<script src="/assets/js/engine.js"></script>
 <?= $pageScript ?? '' ?>
 </body>
 </html>

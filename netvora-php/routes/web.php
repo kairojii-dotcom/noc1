@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Controllers\Web\PageController;
-use App\Core\Response;
 use App\Core\Router;
 
 return static function (Router $router): void {
@@ -12,4 +11,7 @@ return static function (Router $router): void {
     $router->get('/superadmin', [PageController::class, 'superadmin']);
     $router->get('/dashboard', [PageController::class, 'tenant']);
     $router->get('/tv', [PageController::class, 'tvMode']);
+
+    // Generic module pages: /superadmin/{module} and /dashboard/{module}
+    $router->get('/{scope}/{module}', [PageController::class, 'module']);
 };

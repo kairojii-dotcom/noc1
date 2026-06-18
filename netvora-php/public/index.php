@@ -20,8 +20,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 $router  = new Router();
 $request = new Request();
 
-// Route definitions
-(require BASE_PATH . '/routes/web.php')($router);
+// Route definitions — API first so specific /api/* wins over the web catch-all
 (require BASE_PATH . '/routes/api.php')($router);
+(require BASE_PATH . '/routes/web.php')($router);
 
 $router->dispatch($request);
