@@ -1,0 +1,58 @@
+# =====================================================================
+# NETVORA NOC — docker-compose (PHP-FPM + Nginx + Cron)
+# For Coolify: point the build to this compose file.
+# Database = Supabase (external), configured via .env
+# =====================================================================
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: netvora-app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./:/var/www
+      - app_storage:/var/www/storage
+    expose:
+      - "9000"
+    networks: [netvora]
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: netvora-web
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [netvora]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  cron:
+    build: .
+    container_name: netvora-cron
+    restart: unless-stopped
+    env_file: .env
+    depends_on: [app]
+    volumes:
+      - ./:/var/www
+    entrypoint: >
+      sh -c "echo '* * * * * php /var/www/cron/scheduler.php poll'    >  /etc/crontabs/root &&
+             echo '0 2 * * * php /var/www/cron/scheduler.php billing' >> /etc/crontabs/root &&
+             echo '0 * * * * php /var/www/cron/scheduler.php cleanup' >> /etc/crontabs/root &&
+             crond -f -l 2"
+    networks: [netvora]
+
+volumes:
+  app_storage:
+
+networks:
+  netvora:
+    driver: bridge
