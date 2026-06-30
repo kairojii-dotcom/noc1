@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.dataTables.min.css">
     <!-- App theme -->
     <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/noc-dashboard.css">
 </head>
 <body>
 <div class="app-shell" x-data="{ sidebarOpen: false }">
