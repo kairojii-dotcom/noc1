@@ -10,6 +10,7 @@ use App\Controllers\Api\BillingController;
 use App\Controllers\Api\DashboardController;
 use App\Controllers\Api\HealthController;
 use App\Controllers\Api\MikrotikController;
+use App\Controllers\Api\NocDashboardController;
 use App\Controllers\Api\ResourceController;
 use App\Controllers\Api\TenantController;
 use App\Controllers\Api\TenantSettingsController;
@@ -52,6 +53,19 @@ return static function (Router $router): void {
         $r->get('/topology', [TopologyController::class, 'index'], ['tenant']);
         $r->post('/topology', [TopologyController::class, 'save'], ['tenant']);
         $r->post('/ai/analyze', [AiController::class, 'analyze'], ['tenant', 'perm:ai_analytics']);
+
+        // Dashboard NOC data source
+        $r->get('/noc/dashboard/summary', [NocDashboardController::class, 'summary'], ['tenant']);
+        $r->get('/noc/dashboard/router-status', [NocDashboardController::class, 'routerStatus'], ['tenant']);
+        $r->get('/noc/dashboard/olt-status', [NocDashboardController::class, 'oltStatus'], ['tenant']);
+        $r->get('/noc/dashboard/onu-status', [NocDashboardController::class, 'onuStatus'], ['tenant']);
+        $r->get('/noc/dashboard/customer-status', [NocDashboardController::class, 'customerStatus'], ['tenant']);
+        $r->get('/noc/dashboard/traffic-24h', [NocDashboardController::class, 'traffic24h'], ['tenant']);
+        $r->get('/noc/dashboard/loss-24h', [NocDashboardController::class, 'loss24h'], ['tenant']);
+        $r->get('/noc/dashboard/alerts', [NocDashboardController::class, 'alerts'], ['tenant']);
+        $r->get('/noc/dashboard/critical-devices', [NocDashboardController::class, 'criticalDevices'], ['tenant']);
+        $r->get('/noc/dashboard/topology', [NocDashboardController::class, 'topology'], ['tenant']);
+        $r->get('/noc/dashboard/map', [NocDashboardController::class, 'map'], ['tenant']);
 
         // Live MikroTik PPPoE
         $r->get('/pppoe-users', [MikrotikController::class, 'pppoeUsers'], ['tenant']);
