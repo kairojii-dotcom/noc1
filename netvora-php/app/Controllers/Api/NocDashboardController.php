@@ -119,18 +119,14 @@ final class NocDashboardController extends Controller
     {
         $tenantId = $this->tenant($request);
         $items = [];
-        foreach ([
-            ['routers', 'router', 'name'],
-            ['olts', 'olt', 'name'],
-            ['odps', 'odp', 'name'],
-            ['customers', 'customer', 'name'],
-        ] as [$table, $type, $label]) {
-            $items = array_merge($items, Database::select(
-                "SELECT id, {$label} AS name, :type AS type, status, latitude, longitude, location, address
-                 FROM {$table}
-                 WHERE tenant_id=:t AND latitude IS NOT NULL AND longitude IS NOT NULL",
-                [':type' => $type, ':t' => $tenantId]
-            ));
+        $queries = [
+            "SELECT id, name, 'router' AS type, status, latitude, longitude, location, NULL::text AS address FROM routers WHERE tenant_id=:t AND latitude IS NOT NULL AND longitude IS NOT NULL",
+            "SELECT id, name, 'olt' AS type, status, latitude, longitude, location, NULL::text AS address FROM olts WHERE tenant_id=:t AND latitude IS NOT NULL AND longitude IS NOT NULL",
+            "SELECT id, name, 'odp' AS type, status, latitude, longitude, NULL::text AS location, NULL::text AS address FROM odps WHERE tenant_id=:t AND latitude IS NOT NULL AND longitude IS NOT NULL",
+            "SELECT id, name, 'customer' AS type, status, latitude, longitude, NULL::text AS location, address FROM customers WHERE tenant_id=:t AND latitude IS NOT NULL AND longitude IS NOT NULL",
+        ];
+        foreach ($queries as $sql) {
+            $items = array_merge($items, Database::select($sql, [':t' => $tenantId]));
         }
         Response::success($items);
     }
@@ -149,10 +145,7 @@ final class NocDashboardController extends Controller
 
     private function statusCount(string $table, string $tenantId): array
     {
-        $rows = Database::select(
-            "SELECT status, count(*)::int AS total FROM {$table} WHERE tenant_id=:t GROUP BY status",
-            [':t' => $tenantId]
-        );
+        $rows = Database::select("SELECT status, count(*)::int AS total FROM {$table} WHERE tenant_id=:t GROUP BY status", [':t' => $tenantId]);
         $out = ['total' => 0, 'online' => 0, 'offline' => 0, 'unknown' => 0];
         foreach ($rows as $row) {
             $status = (string) ($row['status'] ?? 'unknown');
@@ -166,19 +159,13 @@ final class NocDashboardController extends Controller
     private function onuCount(string $tenantId): array
     {
         $base = $this->statusCount('onus', $tenantId);
-        $base['loss_high'] = (int) Database::scalar(
-            "SELECT count(*) FROM onus WHERE tenant_id=:t AND rx_power < -27",
-            [':t' => $tenantId]
-        );
+        $base['loss_high'] = (int) Database::scalar("SELECT count(*) FROM onus WHERE tenant_id=:t AND rx_power < -27", [':t' => $tenantId]);
         return $base;
     }
 
     private function customerCount(string $tenantId): array
     {
-        $rows = Database::select(
-            "SELECT status, count(*)::int AS total FROM customers WHERE tenant_id=:t GROUP BY status",
-            [':t' => $tenantId]
-        );
+        $rows = Database::select("SELECT status, count(*)::int AS total FROM customers WHERE tenant_id=:t GROUP BY status", [':t' => $tenantId]);
         $out = ['total' => 0, 'active' => 0, 'inactive' => 0, 'isolir' => 0, 'suspend' => 0, 'expired' => 0, 'unpaid' => 0];
         foreach ($rows as $row) {
             $status = (string) $row['status'];
@@ -199,25 +186,14 @@ final class NocDashboardController extends Controller
     private function lossCount(string $tenantId): array
     {
         $total = (int) Database::scalar("SELECT count(*) FROM onus WHERE tenant_id=:t", [':t' => $tenantId]);
-        $critical = (int) Database::scalar(
-            "SELECT count(*) FROM onus WHERE tenant_id=:t AND (rx_power < -27 OR status IN ('los','offline'))",
-            [':t' => $tenantId]
-        );
-        return [
-            'total' => $total,
-            'normal' => max(0, $total - $critical),
-            'critical' => $critical,
-            'percent' => $total > 0 ? round(($critical / $total) * 100, 2) : 0,
-        ];
+        $critical = (int) Database::scalar("SELECT count(*) FROM onus WHERE tenant_id=:t AND (rx_power < -27 OR status IN ('los','offline'))", [':t' => $tenantId]);
+        return ['total' => $total, 'normal' => max(0, $total - $critical), 'critical' => $critical, 'percent' => $total > 0 ? round(($critical / $total) * 100, 2) : 0];
     }
 
     private function ticketCount(string $tenantId): array
     {
-        $rows = Database::select(
-            "SELECT status, count(*)::int AS total FROM tickets WHERE tenant_id=:t GROUP BY status",
-            [':t' => $tenantId]
-        );
-        $out = ['total' => 0, 'open' => 0, 'in_progress' => 0, 'pending' => 0, 'resolved' => 0, 'closed' => 0];
+        $rows = Database::select("SELECT status, count(*)::int AS total FROM tickets WHERE tenant_id=:t GROUP BY status", [':t' => $tenantId]);
+        $out = ['total' => 0, 'open' => 0, 'in_progress' => 0, 'resolved' => 0, 'closed' => 0];
         foreach ($rows as $row) {
             $status = (string) $row['status'];
             $count = (int) $row['total'];
@@ -244,15 +220,8 @@ final class NocDashboardController extends Controller
             $placeholders[] = $key;
             $params[$key] = $metric;
         }
-        $sql = "SELECT to_char(date_trunc('hour', ts), 'HH24:00') AS bucket, avg(value) AS value
-                FROM device_metrics
-                WHERE tenant_id=:t AND metric IN (" . implode(',', $placeholders) . ") AND ts >= now() - interval '24 hours'
-                GROUP BY date_trunc('hour', ts)
-                ORDER BY date_trunc('hour', ts) ASC";
+        $sql = "SELECT to_char(date_trunc('hour', ts), 'HH24:00') AS bucket, avg(value) AS value FROM device_metrics WHERE tenant_id=:t AND metric IN (" . implode(',', $placeholders) . ") AND ts >= now() - interval '24 hours' GROUP BY date_trunc('hour', ts) ORDER BY date_trunc('hour', ts) ASC";
         $rows = Database::select($sql, $params);
-        return array_map(static fn ($r) => [
-            'bucket' => $r['bucket'],
-            'value' => round($absolute ? abs((float) $r['value']) : (float) $r['value'], 2),
-        ], $rows);
+        return array_map(static fn ($r) => ['bucket' => $r['bucket'], 'value' => round($absolute ? abs((float) $r['value']) : (float) $r['value'], 2)], $rows);
     }
 }
